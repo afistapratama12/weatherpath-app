@@ -1,103 +1,169 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { useState, useRef } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { SearchSidebar } from '@/components/search-sidebar';
+import { MobileBottomSheet } from '@/components/mobile-bottom-sheet';
+import { GoogleMap } from '@/components/map/google-map';
+import { WeatherList } from '@/components/weather/weather-list';
+import { LoadingWeatherList } from '@/components/weather/loading-weather-list';
+import { useAppStore } from '@/lib/store/app-store';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  geocodeAddress, 
+  getRoute, 
+  calculateRoutePoints, 
+  getWeatherForRoutePoints 
+} from '@/lib/api/weather-route';
+import { SearchFormData, SearchHistory } from '@/types';
+import { toast } from 'sonner';
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+export default function HomePage() {
+  const {
+    sidebarOpen,
+    currentRoute,
+    currentWeatherPoints,
+    setCurrentRoute,
+    setCurrentWeatherPoints,
+    setIsLoading,
+    addToHistory,
+    isLoading,
+  } = useAppStore();
+
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const isMobile = useIsMobile();
+
+  const searchMutation = useMutation({
+    mutationFn: async (formData: SearchFormData) => {
+      setIsLoading(true);
+      
+      try {
+        // Step 1: Geocode addresses
+        const [fromLocations, toLocations] = await Promise.all([
+          geocodeAddress(formData.from),
+          geocodeAddress(formData.to),
+        ]);
+
+        if (fromLocations.length === 0) {
+          throw new Error('Starting location not found');
+        }
+        if (toLocations.length === 0) {
+          throw new Error('Destination not found');
+        }
+
+  const fromLocation = fromLocations[0];
+  const toLocation = toLocations[0];
+  setMapCenter({ lat: fromLocation.lat, lng: fromLocation.lon });
+
+        // Step 2: Get route
+        const route = await getRoute(
+          fromLocation.lat,
+          fromLocation.lon,
+          toLocation.lat,
+          toLocation.lon,
+          formData.vehicleType
+        );
+
+        // Step 3: Calculate route points based on interval
+        const routePoints = calculateRoutePoints(
+          route,
+          parseInt(formData.interval),
+          formData.vehicleType
+        );
+
+        // Step 4: Get weather for each route point
+        const weatherPoints = await getWeatherForRoutePoints(routePoints);
+
+        // Step 5: Update state
+        setCurrentRoute(route);
+        setCurrentWeatherPoints(weatherPoints);
+
+        // Step 6: Save to history
+        const historyItem: SearchHistory = {
+          id: Date.now().toString(),
+          timestamp: Date.now(),
+          searchData: formData,
+          route,
+          weatherPoints,
+        };
+        addToHistory(historyItem);
+
+        return { route, weatherPoints };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onSuccess: () => {
+      toast.success('Route and weather data loaded successfully!');
+    },
+    onError: (error: any) => {
+      console.error('Search failed:', error);
+      toast.error(`Search failed: ${error.message}`);
+    },
+  });
+
+  const handleSearch = (formData: SearchFormData) => {
+    searchMutation.mutate(formData);
+  };
+
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <div className="h-screen flex flex-col bg-gray-50 relative">
+        {/* Full screen map */}
+        <div className="flex-1">
+          <GoogleMap
+            route={currentRoute}
+            weatherPoints={currentWeatherPoints}
+            center={mapCenter}
+            className="h-full"
+            isLoading={isLoading}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Bottom Sheet */}
+        <MobileBottomSheet onSearch={handleSearch} />
+      </div>
+    );
+  }
+
+  // Desktop Layout
+  return (
+    <div className="h-screen flex bg-gray-50">
+      {/* Search Sidebar */}
+      <SearchSidebar onSearch={handleSearch} />
+
+      {/* Main Content */}
+      <div 
+        className={`flex-1 transition-all duration-300 ${
+          sidebarOpen ? 'lg:ml-96' : 'ml-0'
+        }`}
+      >
+        <div className="h-full flex flex-col lg:flex-row">
+          {/* Map Section */}
+          <div className="flex-1 lg:flex-[2] h-1/2 lg:h-full">
+            <GoogleMap
+              route={currentRoute}
+              weatherPoints={currentWeatherPoints}
+              center={mapCenter}
+              className="h-full"
+              isLoading={isLoading}
+            />
+          </div>
+
+          {/* Weather List Section */}
+          <div className="lg:flex-1 h-1/2 lg:h-full p-4">
+            {isLoading ? (
+              <LoadingWeatherList />
+            ) : (
+              <WeatherList
+                weatherPoints={currentWeatherPoints}
+                className="h-full"
+              />
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
