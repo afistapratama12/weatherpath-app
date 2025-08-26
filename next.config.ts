@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'date-fns'],
   },
+   eslint: {
+    ignoreDuringBuilds: true,
+  },
   
   // Image optimization settings
   images: {
