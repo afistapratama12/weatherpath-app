@@ -16,21 +16,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Weather Route App - Plan Your Journey with Weather Forecasts",
+  title: "Weatherpath - Plan Your Journey with Weather Forecasts",
   description: "Plan your routes with real-time weather forecasts. Get weather updates at intervals along your driving, cycling, or walking routes.",
-  keywords: ["weather", "route planning", "navigation", "weather forecast", "travel", "journey planner"],
-  authors: [{ name: "Weather Route App Team" }],
+  keywords: ["weather", "route planning", "navigation", "weather forecast", "travel", "journey planner", "app"],
+  authors: [{ name: "Weather Path Team" }],
   viewport: "width=device-width, initial-scale=1",
   themeColor: "#3B82F6",
   openGraph: {
-    title: "Weather Route App",
+    title: "Weather Path",
     description: "Plan your journey with weather forecasts along your route",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Weather Route App",
+    title: "Weather Path",
     description: "Plan your journey with weather forecasts along your route",
   },
   robots: {
@@ -45,7 +45,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+       <head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/icon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/icon.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

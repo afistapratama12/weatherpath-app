@@ -23,6 +23,7 @@ import {
 import { useAppStore } from '@/lib/store/app-store';
 import { SearchFormData, SearchHistory, Location } from '@/types';
 import axios from 'axios';
+import Image from 'next/image';
 
 interface SearchSidebarProps {
   onSearch: (formData: SearchFormData) => void;
@@ -374,7 +375,7 @@ export function SearchSidebar({ onSearch, isMobile = false }: SearchSidebarProps
         <Button
           variant="outline"
           size="icon"
-          className="fixed top-4 left-4 z-50 bg-white shadow-lg"
+          className="fixed top-16 left-4 z-50 bg-white shadow-lg"
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >
           <PanelLeftOpen className="h-4 w-4" />
@@ -409,8 +410,9 @@ export function SearchSidebar({ onSearch, isMobile = false }: SearchSidebarProps
               <div className='flex justify-between items-center'>
                 <div className="space-y-2">
                   <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Navigation className="h-6 w-6 text-blue-600" />
-                    Weather Route
+                    {/* <Navigation className="h-6 w-6 text-blue-600" /> */}
+                    <Image alt="logo" src="/weatherpath.svg" width={32} height={32} />
+                    Weather path
                   </h1>
                   <p className="text-sm text-gray-600">
                     Plan your journey with weather forecasts
