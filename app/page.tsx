@@ -9,11 +9,11 @@ import { WeatherList } from '@/components/weather/weather-list';
 import { LoadingWeatherList } from '@/components/weather/loading-weather-list';
 import { useAppStore } from '@/lib/store/app-store';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { 
-  geocodeAddress, 
-  getRoute, 
-  calculateRoutePoints, 
-  getWeatherForRoutePoints 
+import {
+  geocodeAddress,
+  getRoute,
+  calculateRoutePoints,
+  getWeatherForRoutePoints,
 } from '@/lib/api/weather-route';
 import { SearchFormData, SearchHistory } from '@/types';
 import { toast } from 'sonner';
@@ -36,7 +36,7 @@ export default function HomePage() {
   const searchMutation = useMutation({
     mutationFn: async (formData: SearchFormData) => {
       setIsLoading(true);
-      
+
       try {
         // Step 1: Geocode addresses
         const [fromLocations, toLocations] = await Promise.all([
@@ -51,9 +51,9 @@ export default function HomePage() {
           throw new Error('Destination not found');
         }
 
-  const fromLocation = fromLocations[0];
-  const toLocation = toLocations[0];
-  setMapCenter({ lat: fromLocation.lat, lng: fromLocation.lon });
+        const fromLocation = fromLocations[0];
+        const toLocation = toLocations[0];
+        setMapCenter({ lat: fromLocation.lat, lng: fromLocation.lon });
 
         // Step 2: Get route
         const route = await getRoute(
@@ -134,11 +134,7 @@ export default function HomePage() {
       <SearchSidebar onSearch={handleSearch} />
 
       {/* Main Content */}
-      <div 
-        className={`flex-1 transition-all duration-300 ${
-          sidebarOpen ? 'lg:ml-96' : 'ml-0'
-        }`}
-      >
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-96' : 'ml-0'}`}>
         <div className="h-full flex flex-col lg:flex-row">
           {/* Map Section */}
           <div className="flex-1 lg:flex-[2] h-1/2 lg:h-full">
@@ -156,10 +152,7 @@ export default function HomePage() {
             {isLoading ? (
               <LoadingWeatherList />
             ) : (
-              <WeatherList
-                weatherPoints={currentWeatherPoints}
-                className="h-full"
-              />
+              <WeatherList weatherPoints={currentWeatherPoints} className="h-full" />
             )}
           </div>
         </div>

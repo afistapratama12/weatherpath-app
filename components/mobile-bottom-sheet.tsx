@@ -40,8 +40,8 @@ export function MobileBottomSheet({ onSearch }: MobileBottomSheetProps) {
   }, []);
 
   // Heights for different states
-  const minHeight = 120; // Minimized state showing just header
-  const maxHeight = windowHeight * 0.75; // 75% of screen height
+  const minHeight = 40; // Minimized state showing just drag handle
+  const maxHeight = windowHeight * 0.70; // 75% of screen height
 
   useEffect(() => {
     if (currentWeatherPoints.length > 0 && maxHeight > 0) {
@@ -112,95 +112,101 @@ export function MobileBottomSheet({ onSearch }: MobileBottomSheetProps) {
       >
         {/* Header */}
         <div 
-          className="p-4 border-b bg-white rounded-t-2xl cursor-pointer select-none flex-shrink-0"
+          className="pt-2 bg-white rounded-t-2xl cursor-pointer select-none flex-shrink-0"
           onClick={toggleSheet}
-          style={{ height: minHeight }}
         >
-          {/* Drag handle - moved to top */}
-          <div className="flex justify-center mb-2">
+          {/* Drag handle - always visible */}
+          <div className="flex justify-center py-2">
             <div className="w-10 h-1 bg-gray-300 rounded-full" />
           </div>
           
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-semibold truncate">
-                {showContent === 'search' ? 'Plan Your Route' : 'Weather Forecast'}
-              </h2>
-              <p className="text-sm text-gray-600 truncate">
-                {showContent === 'search' 
-                  ? 'Search for weather along your route'
-                  : `${currentWeatherPoints.length} weather points along route`
-                }
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Toggle buttons */}
-              {currentWeatherPoints.length > 0 && (
-                <div className="flex bg-gray-100 rounded-lg p-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowContent('search');
-                    }}
-                    className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                      showContent === 'search'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Search
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowContent('weather');
-                    }}
-                    className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                      showContent === 'weather'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Weather
-                  </button>
+          {/* Header content - only visible when expanded */}
+          {isExpanded && (
+            <div className="p-4 border-b">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-semibold truncate">
+                    {showContent === 'search' ? 'Plan Your Route' : 'Weather Forecast'}
+                  </h2>
+                  <p className="text-sm text-gray-600 truncate">
+                    {showContent === 'search' 
+                      ? 'Search for weather along your route'
+                      : `${currentWeatherPoints.length} weather points along route`
+                    }
+                  </p>
                 </div>
-              )}
-              {isExpanded ? (
-                <ChevronDown className="h-5 w-5 text-gray-400" />
-              ) : (
-                <ChevronUp className="h-5 w-5 text-gray-400" />
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div 
-          className="flex-1 overflow-hidden"
-          onTouchStart={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {showContent === 'search' ? (
-            <div className="h-full overflow-y-auto">
-              <SearchSidebar 
-                onSearch={handleMobileSearch}
-                isMobile={true}
-              />
-            </div>
-          ) : (
-            <div className="h-full overflow-y-auto p-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {isLoading ? (
-                <LoadingWeatherList />
-              ) : (
-                <WeatherList
-                  weatherPoints={currentWeatherPoints}
-                  className="h-full"
-                  disableInternalScroll={true}
-                />
-              )}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Toggle buttons */}
+                  {currentWeatherPoints.length > 0 && (
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowContent('search');
+                        }}
+                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                          showContent === 'search'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Search
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowContent('weather');
+                        }}
+                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                          showContent === 'weather'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Weather
+                      </button>
+                    </div>
+                  )}
+                  {isExpanded ? (
+                    <ChevronDown className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <ChevronUp className="h-5 w-5 text-gray-400" />
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
+
+        {/* Content - only visible when expanded */}
+        {isExpanded && (
+          <div 
+            className="flex-1 overflow-hidden"
+            onTouchStart={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {showContent === 'search' ? (
+              <div className="h-full overflow-y-auto">
+                <SearchSidebar 
+                  onSearch={handleMobileSearch}
+                  isMobile={true}
+                />
+              </div>
+            ) : (
+              <div className="h-full overflow-y-auto p-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {isLoading ? (
+                  <LoadingWeatherList />
+                ) : (
+                  <WeatherList
+                    weatherPoints={currentWeatherPoints}
+                    className="h-full"
+                    disableInternalScroll={true}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </motion.div>
     </div>
   );

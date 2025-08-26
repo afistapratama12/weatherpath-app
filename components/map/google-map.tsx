@@ -15,6 +15,8 @@ interface GoogleMapProps {
 export function GoogleMap({ route, weatherPoints, className, center, isLoading = false }: GoogleMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const routeLineRef = useRef<google.maps.Polyline | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -55,7 +57,11 @@ export function GoogleMap({ route, weatherPoints, className, center, isLoading =
     const map = mapInstanceRef.current;
 
     // Clear existing overlays
-    // Note: In a real implementation, you'd want to keep track of overlays to remove them
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+    if (routeLineRef.current) {
+      routeLineRef.current.setMap(null);
+    }
 
     if (route.features && route.features.length > 0) {
       const feature = route.features[0];
@@ -68,7 +74,7 @@ export function GoogleMap({ route, weatherPoints, className, center, isLoading =
       }));
 
       // Create polyline for the route
-      const routeLine = new google.maps.Polyline({
+      routeLineRef.current = new google.maps.Polyline({
         path: path,
         geodesic: true,
         strokeColor: '#3B82F6',
@@ -76,45 +82,137 @@ export function GoogleMap({ route, weatherPoints, className, center, isLoading =
         strokeWeight: 4,
       });
 
-      routeLine.setMap(map);
+      routeLineRef.current.setMap(map);
 
-      // Add markers for weather points
+      // Add weather markers along the route
       weatherPoints.forEach((point, index) => {
+        if (!point.weather?.weather?.[0]) return;
+
+        const weatherIcon = point.weather.weather[0].icon;
+        const temp = Math.round(point.weather.main.temp);
+        const description = point.weather.weather[0].description;
+        
+        // Create custom marker with weather icon
         const marker = new google.maps.Marker({
           position: { lat: point.lat, lng: point.lon },
           map: map,
-          title: `Weather Point ${index + 1}`,
+          title: `${temp}°C - ${description}`,
           icon: {
-            url: `https://openweathermap.org/img/wn/${point.weather?.weather[0]?.icon}@2x.png`,
-            scaledSize: new google.maps.Size(40, 40),
+            url: `https://openweathermap.org/img/wn/${weatherIcon}@2x.png`,
+            scaledSize: new google.maps.Size(50, 50),
+            anchor: new google.maps.Point(25, 25),
           },
+          zIndex: 1000 + index,
         });
 
-        // Add info window with weather data
-        if (point.weather) {
-          const infoWindow = new google.maps.InfoWindow({
-            content: `
-              <div class="p-2">
-                <h3 class="font-semibold">${Math.round(point.weather.main.temp)}°C</h3>
-                <p class="text-sm">${point.weather.weather[0].description}</p>
+        // Create detailed info window
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div class="p-3 min-w-[180px]">
+              <div class="flex items-center gap-3 mb-2">
+                <img 
+                  src="https://openweathermap.org/img/wn/${weatherIcon}@2x.png" 
+                  alt="${description}"
+                  class="w-12 h-12"
+                />
+                <div>
+                  <h3 class="font-bold text-lg text-blue-600">${temp}°C</h3>
+                  <p class="text-sm text-gray-600 capitalize">${description}</p>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="flex items-center gap-1">
+                  <span class="text-orange-500">🌡️</span>
+                  <span>Feels like: ${Math.round(point.weather.main.feels_like)}°C</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="text-blue-500">💧</span>
+                  <span>Humidity: ${point.weather.main.humidity}%</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="text-gray-500">💨</span>
+                  <span>Wind: ${point.weather.wind.speed} m/s</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="text-purple-500">⏱️</span>
+                  <span>+${Math.round(point.timeFromStart)}min</span>
+                </div>
+              </div>
+              
+              <div class="mt-2 pt-2 border-t border-gray-200">
                 <p class="text-xs text-gray-500">
-                  Time from start: ${Math.round(point.timeFromStart)}min
+                  📍 ${point.lat.toFixed(4)}, ${point.lon.toFixed(4)}
                 </p>
               </div>
-            `,
-          });
+            </div>
+          `,
+        });
 
-          marker.addListener('click', () => {
-            infoWindow.open(map, marker);
+        // Add click listener to show info window
+        marker.addListener('click', () => {
+          // Close all other info windows first
+          markersRef.current.forEach((m, i) => {
+            if (i !== index && (m as any).infoWindow) {
+              (m as any).infoWindow.close();
+            }
           });
-        }
+          
+          infoWindow.open(map, marker);
+        });
+
+        // Store info window reference for later use
+        (marker as any).infoWindow = infoWindow;
+        markersRef.current.push(marker);
       });
 
-      // Fit map to show entire route
+      // Add start and end markers
+      // if (weatherPoints.length > 0) {
+        // Start marker
+        // const startMarker = new google.maps.Marker({
+        //   position: { lat: weatherPoints[0].lat, lng: weatherPoints[0].lon },
+        //   map: map,
+        //   title: 'Start Point',
+        //   icon: {
+        //     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+        //       <svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+        //         <circle cx="15" cy="15" r="12" fill="#10B981" stroke="#ffffff" stroke-width="3"/>
+        //         <text x="15" y="20" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">S</text>
+        //       </svg>
+        //     `),
+        //     scaledSize: new google.maps.Size(30, 30),
+        //     anchor: new google.maps.Point(15, 15),
+        //   },
+        //   zIndex: 2000,
+        // });
+
+        // End marker
+        // const endPoint = weatherPoints[weatherPoints.length - 1];
+        // const endMarker = new google.maps.Marker({
+        //   position: { lat: endPoint.lat, lng: endPoint.lon },
+        //   map: map,
+        //   title: 'End Point',
+        //   icon: {
+        //     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+        //       <svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+        //         <circle cx="15" cy="15" r="12" fill="#EF4444" stroke="#ffffff" stroke-width="3"/>
+        //         <text x="15" y="20" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">E</text>
+        //       </svg>
+        //     `),
+        //     scaledSize: new google.maps.Size(30, 30),
+        //     anchor: new google.maps.Point(15, 15),
+        //   },
+        //   zIndex: 2000,
+        // });
+
+        // markersRef.current.push(startMarker, endMarker);
+      // }
+
+      // Fit map to show entire route with padding
       if (path.length > 0) {
         const bounds = new google.maps.LatLngBounds();
         path.forEach(point => bounds.extend(point));
-        map.fitBounds(bounds);
+        map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
       }
     }
   }, [isLoaded, route, weatherPoints]);
@@ -131,7 +229,7 @@ export function GoogleMap({ route, weatherPoints, className, center, isLoading =
         </div>
       )}
       {isLoading && isLoaded && (
-        <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black bg-opacity-20 z-20">
+        <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black bg-opacity-90 z-20">
           <div className="bg-white rounded-lg p-4 shadow-lg text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent mx-auto mb-2" />
             <p className="text-gray-700 font-medium">Searching route & weather...</p>
