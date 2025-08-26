@@ -5,8 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { SearchSidebar } from '@/components/search-sidebar';
 import { MobileBottomSheet } from '@/components/mobile-bottom-sheet';
 import { GoogleMap } from '@/components/map/google-map';
-import { WeatherList } from '@/components/weather/weather-list';
-import { LoadingWeatherList } from '@/components/weather/loading-weather-list';
+import { WeatherPanel } from '@/components/weather/weather-panel';
 import { useAppStore } from '@/lib/store/app-store';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -21,6 +20,7 @@ import { toast } from 'sonner';
 export default function HomePage() {
   const {
     sidebarOpen,
+    weatherPanelOpen,
     currentRoute,
     currentWeatherPoints,
     setCurrentRoute,
@@ -135,9 +135,9 @@ export default function HomePage() {
 
       {/* Main Content */}
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-96' : 'ml-0'}`}>
-        <div className="h-full flex flex-col lg:flex-row">
+        <div className="h-full flex relative">
           {/* Map Section */}
-          <div className="flex-1 lg:flex-[2] h-1/2 lg:h-full">
+          <div className="flex-1">
             <GoogleMap
               route={currentRoute}
               weatherPoints={currentWeatherPoints}
@@ -147,14 +147,8 @@ export default function HomePage() {
             />
           </div>
 
-          {/* Weather List Section */}
-          <div className="lg:flex-1 h-1/2 lg:h-full p-4">
-            {isLoading ? (
-              <LoadingWeatherList />
-            ) : (
-              <WeatherList weatherPoints={currentWeatherPoints} className="h-full" />
-            )}
-          </div>
+          {/* Weather Panel */}
+          <WeatherPanel className="h-full" />
         </div>
       </div>
     </div>

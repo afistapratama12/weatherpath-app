@@ -5,6 +5,7 @@ import { SearchFormData, SearchHistory, RouteResponse, WeatherPoint } from '@/ty
 interface AppState {
   // UI State
   sidebarOpen: boolean;
+  weatherPanelOpen: boolean;
   isLoading: boolean;
   
   // Form Data
@@ -19,6 +20,7 @@ interface AppState {
   
   // Actions
   setSidebarOpen: (open: boolean) => void;
+  setWeatherPanelOpen: (open: boolean) => void;
   setIsLoading: (loading: boolean) => void;
   updateSearchForm: (data: Partial<SearchFormData>) => void;
   setCurrentRoute: (route: RouteResponse | null) => void;
@@ -33,6 +35,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       // Initial State
       sidebarOpen: true,
+      weatherPanelOpen: false,
       isLoading: false,
       searchForm: {
         from: '',
@@ -47,6 +50,8 @@ export const useAppStore = create<AppState>()(
       // Actions
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       
+      setWeatherPanelOpen: (open) => set({ weatherPanelOpen: open }),
+      
       setIsLoading: (loading) => set({ isLoading: loading }),
       
       updateSearchForm: (data) =>
@@ -56,7 +61,10 @@ export const useAppStore = create<AppState>()(
       
       setCurrentRoute: (route) => set({ currentRoute: route }),
       
-      setCurrentWeatherPoints: (points) => set({ currentWeatherPoints: points }),
+      setCurrentWeatherPoints: (points) => set({ 
+        currentWeatherPoints: points,
+        weatherPanelOpen: points.length > 0 // Auto-open when weather data is available
+      }),
       
       addToHistory: (historyItem) =>
         set((state) => ({
@@ -68,6 +76,7 @@ export const useAppStore = create<AppState>()(
           searchForm: historyItem.searchData,
           currentRoute: historyItem.route,
           currentWeatherPoints: historyItem.weatherPoints,
+          weatherPanelOpen: historyItem.weatherPoints.length > 0, // Auto-open when loading from history
         }),
       
       clearHistory: () => set({ searchHistory: [] }),
